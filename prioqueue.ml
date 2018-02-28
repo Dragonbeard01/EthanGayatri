@@ -77,17 +77,24 @@ module ListQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
 
     type queue = elt list
 
-    let empty : queue =
-      failwith "ListQueue empty not implemented"
+    let empty : queue = []
 
     let is_empty (q : queue) : bool =
-      failwith "ListQueue is_empty not implemented"
+      match q with
+      | [] -> true
+      | _ -> false
 
-    let add (e : elt) (q : queue) : queue =
-      failwith "ListQueue add not implemented"
+    let rec add (e : elt) (q : queue) : queue =
+      match q with
+      | hd::tl -> 
+        match C.compare e hd with
+        | Equal | Less -> e::hd::tl
+        | Greater -> hd::(add e tl)
 
     let take (q : queue) : elt * queue =
-      failwith "ListQueue take not implemented"
+      match q qith
+      | [] -> Raise QueueEmpty
+      | hd::tl -> hd, tl
 
     let run_tests () =
       failwith "ListQueue run_tests not implemented"
@@ -118,8 +125,6 @@ code. That way you'll be able to submit the problem set so that it
 compiles cleanly.
 ......................................................................*)
 
-(* You'll want to uncomment this before working on this section! *)
-(*
 module TreeQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
   struct
     exception QueueEmpty
@@ -131,7 +136,6 @@ module TreeQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
     (* Implement the remainder of the module. *)
 
   end
- *)
 
 (*......................................................................
 Problem 4: Implementing BinaryHeap
