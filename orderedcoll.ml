@@ -115,7 +115,16 @@ module BinSTree (C : COMPARABLE)
     Hint: Use C.compare. See delete for inspiration.
     ..................................................................*)  
     let rec insert (x : elt) (t : tree) : tree =
-      failwith "insert not implemented"
+      match t with
+      | Leaf -> Branch (Leaf, [x], Leaf)
+      | Branch (l, lst, r) ->
+         match lst with
+         | [] -> failwith "Invalid tree: empty list as node"
+         | hd::tl ->
+            match C.compare x hd with
+            | Less -> Branch (insert x l, lst, r)
+            | Greater -> Branch (l, lst, insert x r)
+            | Equal -> Branch (l, x::lst, r)
 
     (*..................................................................
     search -- Returns true if the element x is in tree t, else false.
@@ -123,7 +132,24 @@ module BinSTree (C : COMPARABLE)
     necessarily mean that x itself is in the tree.
     ..................................................................*)
     let rec search (x : elt) (t : tree) : bool =
-      failwith "search not implemented"
+      let rec stringCompare (m : elt list) : bool
+        match m with 
+        | [] -> false
+        | hd::tl->
+          match hd, x with
+	  | (_, s1), (_, s2) -> if (string_compare s1 s2) = Equal then true else stringCompare tl
+	  | _, _ -> true
+      in
+      match t with
+      | Leaf -> false
+      | Branch (l, lst, r) ->
+         match lst with
+         | [] -> failwith "Invalid tree: empty list as node"
+         | hd::tl ->
+            match C.compare x hd with
+            | Less -> search x l
+            | Greater -> search x r
+            | Equal -> stringCompare lst
 
     (* pull_min -- A useful function for removing the node with the
        minimum value from a binary tree, returning that node and the
@@ -186,7 +212,9 @@ module BinSTree (C : COMPARABLE)
     comparison function (like IntStringCompare).
     ..................................................................*)
     let getmin (t : tree) : elt =
-      failwith "getmin not implemented"
+      match (pull_min t) with
+      | (hd::tl), _ -> hd
+      | _, _ -> Raise NotFound
 
     (*..................................................................
     getmax -- Returns the maximum value of the tree t. Similarly should
@@ -195,8 +223,17 @@ module BinSTree (C : COMPARABLE)
     The exception "Empty", defined within this module, might come
     in handy.
     ..................................................................*)  
+    let rec pull_max (t : tree) : elt list * tree =
+      match t with
+      | Leaf -> raise Empty
+      | Branch (l, v, Leaf) -> (v, l)
+      | Branch (l, v, r) -> let max, t' = pull_max r in
+                            (max, Branch (l, v, t'))
+			    
     let rec getmax (t : tree) : elt =
-      failwith "getmax not implemented"
+      match (pull_max t) with
+      | (hd::tl), _ -> hd
+      | _, _ -> Raise NotFound
 
     (* to_string -- Generates a string representation of a binary
        search tree, useful for testing! *)
@@ -322,4 +359,4 @@ on average, not in total).  We care about your responses and will use
 them to help guide us in creating future assignments.
 ......................................................................*)
 
-let minutes_spent_on_part () : int = failwith "not provided" ;;
+let minutes_spent_on_part () : int = 140 ;;
