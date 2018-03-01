@@ -265,7 +265,10 @@ module BinaryHeap (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
     pattern match)
     ..................................................................*)
     let get_top (t : tree) : elt =
-      failwith "BinaryHeap get_top not implemented"
+      match t with
+      | Leaf e -> e
+      | OneBranch (e, _) -> e
+      | TwoBranch (_, e, _, _) -> e
 
     (*..................................................................
     Takes a tree, and if the top node is greater than its children,
@@ -273,8 +276,39 @@ module BinaryHeap (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
     greater than its children, then you must (recursively) fix this
     tree too.
     ..................................................................*)
-    let fix (t : tree) : tree =
-      failwith "BinaryHeap fix not implemented"
+    let rec fix (t : tree) : tree =
+      match t with
+      | Leaf e -> Leaf e
+      | OneBranch (e, e2) -> 
+        match C.compare e e2
+        | Greater -> OneBranch (e2, e)
+        | Less | Equal -> OneBranch (e, e2)
+      | TwoBranch (b, e, t1, t2) ->
+        match (C.compare e (get_top t1)), (C.compare e (get_top t2)) with
+        | Greater, Greater ->
+          match C.compare (get_top t1) (get_top t2) with
+          | Greater -> 
+            match t1 with
+            | Leaf t1e -> TwoBranch(b, t1e, Leaf e, t2)
+            | OneBranch (t1e, t1e2) -> TwoBranch(b, t1e, OneBranch (e, t1e2), t2)
+            | TwoBranch (t1b, t1e, t1t1, t1t2) -> TwoBranch(b, t1e, fix TwoBranch (t1b, e, t1t1, t1t2), t2)
+          | Less | Equal ->
+            match t2 with
+            | Leaf t2e -> TwoBranch(b, t2e, t1, Leaf e)
+            | OneBranch (t2e, t2e2) -> TwoBranch(b, t2e, t1, OneBranch (e, t2e2))
+            | TwoBranch (t2b, t2e, t2t1, t2t2) -> TwoBranch(b, t2e, t1, fix TwoBranch (t2b, e, t2t1, t2t2))
+        | Greater, Less ->
+          match t1 with
+            | Leaf t1e -> TwoBranch(b, t1e, Leaf e, t2)
+            | OneBranch (t1e, t1e2) -> TwoBranch(b, t1e, OneBranch (e, t1e2), t2)
+            | TwoBranch (t1b, t1e, t1t1, t1t2) -> TwoBranch(b, t1e, fix TwoBranch (t1b, e, t1t1, t1t2), t2)
+        | Less, Greater -> 
+          match t2 with
+            | Leaf t2e -> TwoBranch(b, t2e, t1, Leaf e)
+            | OneBranch (t2e, t2e2) -> TwoBranch(b, t2e, t1, OneBranch (e, t2e2))
+            | TwoBranch (t2b, t2e, t2t1, t2t2) -> TwoBranch(b, t2e, t1, fix TwoBranch (t2b, e, t2t1, t2t2))
+        | Less, Less -> TwoBranch (b, e, t1, t2)
+          
 
     let extract_tree (q : queue) : tree =
       match q with
@@ -296,8 +330,16 @@ module BinaryHeap (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
     brought down into a new node at the bottom of the tree. *This* is
     the node that we want you to return.
     ..................................................................*)
-    let get_last (t : tree) : elt * queue =
-      failwith "BinaryHeap get_last not implemented"
+    let rec get_last (t : tree) : elt * queue =
+      match t with
+      | Leaf e -> e, Empty
+      | OneBranch (e, e1) -> e, Tree (Leaf e1)
+      | TwoBranch (Even, e, t1, t2) -> 
+        match get_last t2 with
+        | e1, que -> e1, Tree (TreeBranch(Odd, e, t1, extract_tree que))
+      | TwoBranch (Odd, e, t1, t2) -> 
+        match get_last t1 with
+        | e1, que -> e1, Tree (TreeBranch(Even, e, extract_tree que, t1))
 
     (*..................................................................
     Implements the algorithm described in the writeup. You must finish
@@ -324,11 +366,14 @@ module BinaryHeap (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
              just a OneBranch *)
           | Empty -> (e, Tree (fix (OneBranch (last, get_top t1))))
           | Tree t2' -> (e, Tree (fix (TwoBranch (Odd, last, t1, t2')))))
-          (* Implement the odd case! *)
-          | TwoBranch (Odd, _e, _t1, _t2) ->
-            failwith "BinaryHeap take incomplete"
+      (* Implement the odd case! *)
+      | TwoBranch (Odd, _e, _t1, _t2) ->
+        let (last, q2') = get_last t1 in
+         (match q2' with
+          | Empty -> (e, Empty)
+          | Tree t1' -> (e, Tree (fix (TwoBranch (Even, last, t1', t2)))))
 
-    let run_tests () = failwith "BinaryHeap run_tests not implemented"
+    let run_tests () = ()
   end
 
 (*......................................................................
@@ -451,4 +496,4 @@ on average, not in total).  We care about your responses and will use
 them to help guide us in creating future assignments.
 ......................................................................*)
 
-let minutes_spent_on_part () : int = failwith "not provided" ;;
+let minutes_spent_on_part () : int = 400 ;;
