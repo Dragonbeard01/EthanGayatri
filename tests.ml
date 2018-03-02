@@ -1,4 +1,4 @@
-(* 
+(*
                          CS 51 Problem Set 4
                 Modules, Functors, and Data Structures
                              Spring 2017
@@ -37,12 +37,15 @@ provided by the signature: "BINTREE with type elt = C.t" found in the
 definition of the BinSTree functor.
 
 So, for instance, we can say:
-......................................................................*)
+  ......................................................................*)
+open Order
+open Orderedcoll
+open Prioqueue
 
 type element = IntTree.elt
 
 (* And we can say: *)
-                 
+
 let f = IntTree.delete
 
 (* But we can't say:
@@ -79,8 +82,11 @@ signature.  So, we can run our tests on IntTree with the following
 invocation:
 ......................................................................*)
 let _ = IntTree.run_tests ()
+let _ = IntListQueue.run_tests ()
+let _ = IntHeapQueue.run_tests ()
+let _ = IntTreeQueue.run_tests ()
 
-(* 
+(*
 ........................................................................
 REQUIRED TESTING:
 

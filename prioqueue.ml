@@ -11,10 +11,8 @@ open Orderedcoll ;;
 
 (*======================================================================
 Section 3: Priority queues
-
 A signature for a priority queue. See the problem set specification
 for more information about priority queues.
-
 IMPORTANT: In your implementations of priority queues, the MINIMUM
 valued element corresponds to the HIGHEST priority. For example, in an
 integer priority queue, the integer 4 has lower priority than the
@@ -60,10 +58,8 @@ end
 
 (*......................................................................
 Problem 2: Implementing ListQueue
-
 Implement a priority queue using a simple list to store the elements
 in sorted order. Feel free to use anything from the List module.
-
 After you've implemented ListQueue, you'll want to test the functor
 by, say, generating an IntString priority queue and running the tests
 to make sure your implementation works.
@@ -77,20 +73,50 @@ module ListQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
 
     type queue = elt list
 
-    let empty : queue =
-      failwith "ListQueue empty not implemented"
+    let empty : queue = []
 
     let is_empty (q : queue) : bool =
-      failwith "ListQueue is_empty not implemented"
+      match q with
+      | [] -> true
+      | _ -> false
 
-    let add (e : elt) (q : queue) : queue =
-      failwith "ListQueue add not implemented"
+    let rec add (e : elt) (q : queue) : queue =
+      match q with
+      | [] -> failwith "bad queue"
+      | hd::tl ->
+        match C.compare e hd with
+        | Equal | Less -> e::hd::tl
+        | Greater -> hd::(add e tl)
 
     let take (q : queue) : elt * queue =
-      failwith "ListQueue take not implemented"
+      match q with
+      | [] -> raise QueueEmpty
+      | hd::tl -> hd, tl
+
+    let test_is_empty () =
+      assert (is_empty [] = true);
+      assert (is_empty (add (C.generate ()) empty) = false)
+
+    let test_add () =
+      let x = C.generate () in
+      let x2 = C.generate_gt x in
+      let x3 = C.generate_gt x2 in
+      let x4 = C.generate_gt x3 in
+      assert (add x2 (add x4 (add x (add x3 empty))) = [x;x2;x3;x4])
+
+    let test_delete () =
+      let x = C.generate () in
+      let x2 = C.generate_gt x in
+      let x3 = C.generate_gt x2 in
+      let x4 = C.generate_gt x3 in
+      let after_add = add x4 (add x3 (add x2 (add x empty))) in
+      assert ((take after_add) = (x, [x2;x3;x4]))
 
     let run_tests () =
-      failwith "ListQueue run_tests not implemented"
+      test_is_empty ();
+      test_add ();
+      test_delete ();
+      ()
 
     (* IMPORTANT: Don't change the implementation of to_string. *)
     let to_string (q: queue) : string =
@@ -105,12 +131,10 @@ module ListQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
 
 (*......................................................................
 Problem 3: Implementing TreeQueue
-
 Now implement a functor TreeQueue that generates implementations of
 the priority queue signature PRIOQUEUE using a binary search tree.
 Luckily, you should be able to use *a lot* of your code from the work
 with BinSTree!
-
 If you run into problems implementing TreeQueue, you can at least
 add stub code for each of the values you need to implement so that
 this file will compile and will work with the unit testing
@@ -118,8 +142,6 @@ code. That way you'll be able to submit the problem set so that it
 compiles cleanly.
 ......................................................................*)
 
-(* You'll want to uncomment this before working on this section! *)
-(*
 module TreeQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
   struct
     exception QueueEmpty
@@ -130,32 +152,59 @@ module TreeQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
 
     (* Implement the remainder of the module. *)
 
+    type elt = C.t
+
+    type queue = T.collection
+
+    let empty : queue = T.empty
+
+    let is_empty (q : queue) : bool =
+      if q = empty then true else false
+
+    let rec add (e : elt) (q : queue) : queue =
+      T.insert e q
+
+    let take (q : queue) : elt * queue =
+      (T.getmin q), (T.delete (T.getmin q) q)
+
+    let test_is_empty () =
+      assert (is_empty empty = true);
+      assert (is_empty (add (C.generate ()) empty) = false)
+
+    let test_add_take () =
+      let x = C.generate () in
+      let x2 = C.generate_gt x in
+      let x3 = C.generate_gt x2 in
+      let x4 = C.generate_gt x3 in
+      let after_add = add x4 (add x3 (add x2 (add x empty))) in
+      assert ((take after_add) = (x, (add x4 (add x3 (add x2 empty)))))
+
+    let run_tests () =
+      test_is_empty ();
+      test_add_take ();
+      ()
+
+    let to_string (q: queue) : string =
+      T.to_string q
+
   end
- *)
 
 (*......................................................................
 Problem 4: Implementing BinaryHeap
-
 Implement a priority queue using a binary heap. See the problem set
 writeup for more info.
-
 You should implement a min-heap, i.e., the top of your heap stores the
 smallest element in the entire heap.
-
 Note that, unlike for your tree and list implementations of priority
 queues, you do *not* need to worry about the order in which elements
 of equal priority are removed. Yes, this means it's not really a
 "queue", but it is easier to implement without that restriction.
-
 Be sure to read the pset spec for hints and clarifications!
-
 Remember the invariants of the tree that make up your queue:
-
 1) A tree is ODD if its left subtree has 1 more node than its right
 subtree. It is EVEN if its left and right subtrees have the same
 number of nodes. The tree can never be in any other state. This is the
 WEAK invariant, and should never be false.
-
 2) All nodes in the subtrees of a node should be *greater* than (or
 equal to) the value of that node.  This, combined with the previous
 invariant, makes a STRONG invariant.  Any tree that a user passes in
@@ -165,129 +214,160 @@ tree, the tree may intermittently not satisfy the order invariant. If
 so, you *must* fix the tree before returning it to the user.  Fill in
 the rest of the module below!
 ......................................................................*)
-   
+
 module BinaryHeap (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
-  struct
+struct
 
-    exception QueueEmpty
+  exception QueueEmpty
 
-    type elt = C.t
+  type elt = C.t
 
-    (* A node in the tree is either even or odd *)
-    type balance = Even | Odd
+  (* A node in the tree is either even or odd *)
+  type balance = Even | Odd
 
     (*
      A tree either:
        1) is one single element,
-
        2) has one branch, where:
           the first elt in the tuple is the element at this node,
           and the second elt is the element down the branch,
-
        3) or has two branches (with the node being even or odd)
     *)
-    type tree =
+  type tree =
     | Leaf of elt
     | OneBranch of elt * elt
     | TwoBranch of balance * elt * tree * tree
 
-    (* A queue is either empty, or a tree *)
-    type queue = Empty | Tree of tree
+  (* A queue is either empty, or a tree *)
+  type queue = Empty | Tree of tree
 
-    let empty = Empty
+  let empty = Empty
 
-    (* Prints binary heap as a string - nice for testing! *)
-    let to_string (q: queue) =
-      let rec to_string' (t: tree) =
-        match t with
-        | Leaf e1 -> "Leaf " ^ C.to_string e1
-        | OneBranch(e1, e2) ->
-                 "OneBranch (" ^ C.to_string e1 ^ ", "
-                 ^ C.to_string e2 ^ ")"
-        | TwoBranch(Odd, e1, t1, t2) ->
-                 "TwoBranch (Odd, " ^ C.to_string e1 ^ ", "
-                 ^ to_string' t1 ^ ", " ^ to_string' t2 ^ ")"
-        | TwoBranch(Even, e1, t1, t2) ->
-                 "TwoBranch (Even, " ^ C.to_string e1 ^ ", "
-                 ^ to_string' t1 ^ ", " ^ to_string' t2 ^ ")"
-      in
-      match q with
-      | Empty -> "Empty"
-      | Tree t -> to_string' t
+  (* Prints binary heap as a string - nice for testing! *)
+  let to_string (q: queue) =
+    let rec to_string' (t: tree) =
+      match t with
+      | Leaf e1 -> "Leaf " ^ C.to_string e1
+      | OneBranch(e1, e2) ->
+        "OneBranch (" ^ C.to_string e1 ^ ", "
+        ^ C.to_string e2 ^ ")"
+      | TwoBranch(Odd, e1, t1, t2) ->
+        "TwoBranch (Odd, " ^ C.to_string e1 ^ ", "
+        ^ to_string' t1 ^ ", " ^ to_string' t2 ^ ")"
+      | TwoBranch(Even, e1, t1, t2) ->
+        "TwoBranch (Even, " ^ C.to_string e1 ^ ", "
+        ^ to_string' t1 ^ ", " ^ to_string' t2 ^ ")"
+    in
+    match q with
+    | Empty -> "Empty"
+    | Tree t -> to_string' t
 
-    let is_empty (q : queue) = q = Empty
+  let is_empty (q : queue) = q = Empty
 
-    (* Adds element e to the queue q *)
-    let add (e : elt) (q : queue) : queue =
-      (* Given a tree, where e will be inserted is deterministic based
-         on the invariants. If we encounter a node in the tree where
-         its value is greater than the element being inserted, then we
-         place the new elt in that spot and propagate what used to be
-         at that spot down toward where the new element would have
-         been inserted *)
-      let rec add_to_tree (e : elt) (t : tree) : tree =
-        match t with
-        (* If the tree is just a Leaf, then we end up with a OneBranch *)
-        | Leaf e1 ->
-                 (match C.compare e e1 with
-                  | Equal | Greater -> OneBranch (e1, e)
-                  | Less -> OneBranch (e, e1))
+  (* Adds element e to the queue q *)
+  let add (e : elt) (q : queue) : queue =
+    (* Given a tree, where e will be inserted is deterministic based
+       on the invariants. If we encounter a node in the tree where
+       its value is greater than the element being inserted, then we
+       place the new elt in that spot and propagate what used to be
+       at that spot down toward where the new element would have
+       been inserted *)
+    let rec add_to_tree (e : elt) (t : tree) : tree =
+      match t with
+      (* If the tree is just a Leaf, then we end up with a OneBranch *)
+      | Leaf e1 ->
+        (match C.compare e e1 with
+         | Equal | Greater -> OneBranch (e1, e)
+         | Less -> OneBranch (e, e1))
 
-        (* If the tree was a OneBranch, it will now be a TwoBranch *)
-        | OneBranch(e1, e2) ->
-                 (match C.compare e e1 with
-                  | Equal | Greater -> TwoBranch (Even, e1, Leaf e2, Leaf e)
-                  | Less -> TwoBranch (Even, e, Leaf e2, Leaf e1))
+      (* If the tree was a OneBranch, it will now be a TwoBranch *)
+      | OneBranch(e1, e2) ->
+        (match C.compare e e1 with
+         | Equal | Greater -> TwoBranch (Even, e1, Leaf e2, Leaf e)
+         | Less -> TwoBranch (Even, e, Leaf e2, Leaf e1))
 
-        (* If the tree was even, then it will become an odd tree (and
-           the element is inserted to the left *)
-        | TwoBranch(Even, e1, t1, t2) ->
-                 (match C.compare e e1 with
-                  | Equal | Greater -> TwoBranch(Odd, e1, add_to_tree e t1, t2)
-                  | Less -> TwoBranch(Odd, e, add_to_tree e1 t1, t2))
+      (* If the tree was even, then it will become an odd tree (and
+         the element is inserted to the left *)
+      | TwoBranch(Even, e1, t1, t2) ->
+        (match C.compare e e1 with
+         | Equal | Greater -> TwoBranch(Odd, e1, add_to_tree e t1, t2)
+         | Less -> TwoBranch(Odd, e, add_to_tree e1 t1, t2))
 
-        (* If the tree was odd, then it will become an even tree (and
-           the element is inserted to the right *)
-        | TwoBranch(Odd, e1, t1, t2) ->
-                 match C.compare e e1 with
-                 | Equal | Greater -> TwoBranch(Even, e1, t1, add_to_tree e t2)
-                 | Less -> TwoBranch(Even, e, t1, add_to_tree e1 t2)
-      in
-      (* If the queue is empty, then e is the only Leaf in the tree.
-         Else, insert it into the proper location in the pre-existing
-         tree *)
-      match q with
-      | Empty -> Tree (Leaf e)
-      | Tree t -> Tree (add_to_tree e t)
+      (* If the tree was odd, then it will become an even tree (and
+         the element is inserted to the right *)
+      | TwoBranch(Odd, e1, t1, t2) ->
+        (match C.compare e e1 with
+        | Equal | Greater -> TwoBranch(Even, e1, t1, add_to_tree e t2)
+        | Less -> TwoBranch(Even, e, t1, add_to_tree e1 t2))
+    in
+    (* If the queue is empty, then e is the only Leaf in the tree.
+       Else, insert it into the proper location in the pre-existing
+       tree *)
+    match q with
+    | Empty -> Tree (Leaf e)
+    | Tree t -> Tree (add_to_tree e t)
 
-    (*..................................................................
+  (*..................................................................
     Simply returns the top element of the tree t (i.e., just a single
     pattern match)
     ..................................................................*)
-    let get_top (t : tree) : elt =
-      failwith "BinaryHeap get_top not implemented"
+  let get_top (t : tree) : elt =
+    match t with
+    | Leaf e -> e
+    | OneBranch (e, _) -> e
+    | TwoBranch (_, e, _, _) -> e
 
-    (*..................................................................
+  (*..................................................................
     Takes a tree, and if the top node is greater than its children,
     fixes it. If fixing it results in a subtree where the node is
     greater than its children, then you must (recursively) fix this
     tree too.
     ..................................................................*)
-    let fix (t : tree) : tree =
-      failwith "BinaryHeap fix not implemented"
+  let rec fix (t : tree) : tree =
+    match t with
+    | Leaf e -> Leaf e
+    | OneBranch (e, e2) ->
+      (match C.compare e e2 with
+      | Greater -> OneBranch (e2, e)
+      | Less | Equal -> OneBranch (e, e2))
+    | TwoBranch (b, e, t1, t2) ->
+      (match (C.compare e (get_top t1)), (C.compare e (get_top t2)) with
+      | Greater, Greater ->
+        (match C.compare (get_top t1) (get_top t2) with
+        | Greater ->
+          (match t1 with
+          | Leaf t1e -> TwoBranch(b, t1e, Leaf e, t2)
+          | OneBranch (t1e, t1e2) -> TwoBranch(b, t1e, OneBranch (e, t1e2), t2)
+          | TwoBranch (t1b, t1e, t1t1, t1t2) -> TwoBranch(b, t1e, fix (TwoBranch (t1b, e, t1t1, t1t2)), t2))
+        | Less | Equal ->
+          (match t2 with
+          | Leaf t2e -> TwoBranch(b, t2e, t1, Leaf e)
+          | OneBranch (t2e, t2e2) -> TwoBranch(b, t2e, t1, OneBranch (e, t2e2))
+          | TwoBranch (t2b, t2e, t2t1, t2t2) -> TwoBranch(b, t2e, t1, fix (TwoBranch (t2b, e, t2t1, t2t2)))))
+      | Greater, Less ->
+        (match t1 with
+        | Leaf t1e -> TwoBranch(b, t1e, Leaf e, t2)
+        | OneBranch (t1e, t1e2) -> TwoBranch(b, t1e, OneBranch (e, t1e2), t2)
+        | TwoBranch (t1b, t1e, t1t1, t1t2) -> TwoBranch(b, t1e, fix (TwoBranch (t1b, e, t1t1, t1t2)), t2))
+      | Less, Greater ->
+        (match t2 with
+        | Leaf t2e -> TwoBranch(b, t2e, t1, Leaf e)
+        | OneBranch (t2e, t2e2) -> TwoBranch(b, t2e, t1, OneBranch (e, t2e2))
+        | TwoBranch (t2b, t2e, t2t1, t2t2) -> TwoBranch(b, t2e, t1, fix (TwoBranch (t2b, e, t2t1, t2t2))))
+      | _, _ -> TwoBranch (b, e, t1, t2))
 
-    let extract_tree (q : queue) : tree =
-      match q with
-      | Empty -> raise QueueEmpty
-      | Tree t -> t
 
-    (*..................................................................
+  let extract_tree (q : queue) : tree =
+    match q with
+    | Empty -> raise QueueEmpty
+    | Tree t -> t
+
+  (*..................................................................
     Takes a tree, and returns the item that was most recently inserted
     into that tree, as well as the queue that results from removing
     that element.  Notice that a queue is returned.  (This happens
     because removing an element from just a leaf would result in an
     empty case, which is captured by the queue type).
-
     By "item most recently inserted", we don't mean the most recently
     inserted *value*, but rather the newest node that was added to the
     bottom-level of the tree. If you follow the implementation of add
@@ -296,57 +376,80 @@ module BinaryHeap (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
     brought down into a new node at the bottom of the tree. *This* is
     the node that we want you to return.
     ..................................................................*)
-    let get_last (t : tree) : elt * queue =
-      failwith "BinaryHeap get_last not implemented"
+  let rec get_last (t : tree) : elt * queue =
+    match t with
+    | Leaf e -> e, Empty
+    | OneBranch (e, e1) -> e, Tree (Leaf e1)
+    | TwoBranch (Even, e, t1, t2) ->
+      (match get_last t2 with
+      | e1, que -> e1, Tree (TwoBranch (Odd, e, t1, extract_tree que)))
+    | TwoBranch (Odd, e, t1, t2) ->
+      (match get_last t1 with
+      | e1, que -> e1, Tree (TwoBranch (Even, e, extract_tree que, t1)))
 
-    (*..................................................................
+  (*..................................................................
     Implements the algorithm described in the writeup. You must finish
     this implementation, as well as the implementations of get_last
     and fix, which take uses.
     ..................................................................*)
-    let take (q : queue) : elt * queue =
-      match extract_tree q with
-      (* If the tree is just a Leaf, then return the value of that leaf, and the
-       * new queue is now empty *)
-      | Leaf e -> e, Empty
+  let take (q : queue) : elt * queue =
+    match extract_tree q with
+    (* If the tree is just a Leaf, then return the value of that leaf, and the
+     * new queue is now empty *)
+    | Leaf e -> e, Empty
 
-      (* If the tree is a OneBranch, then the new queue is just a Leaf *)
-      | OneBranch (e1, e2) -> e1, Tree (Leaf e2)
+    (* If the tree is a OneBranch, then the new queue is just a Leaf *)
+    | OneBranch (e1, e2) -> e1, Tree (Leaf e2)
 
-      (* Removing an item from an even tree results in an odd
-         tree. This implementation replaces the root node with the
-         most recently inserted item, and then fixes the tree that
-         results if it is violating the strong invariant *)
-      | TwoBranch (Even, e, t1, t2) ->
-         let (last, q2') = get_last t2 in
-         (match q2' with
-          (* If one branch of the tree was just a leaf, we now have
-             just a OneBranch *)
-          | Empty -> (e, Tree (fix (OneBranch (last, get_top t1))))
-          | Tree t2' -> (e, Tree (fix (TwoBranch (Odd, last, t1, t2')))))
-          (* Implement the odd case! *)
-          | TwoBranch (Odd, _e, _t1, _t2) ->
-            failwith "BinaryHeap take incomplete"
+    (* Removing an item from an even tree results in an odd
+       tree. This implementation replaces the root node with the
+       most recently inserted item, and then fixes the tree that
+       results if it is violating the strong invariant *)
+    | TwoBranch (Even, e, t1, t2) ->
+      let (last, q2') = get_last t2 in
+      (match q2' with
+       (* If one branch of the tree was just a leaf, we now have
+          just a OneBranch *)
+       | Empty -> (e, Tree (fix (OneBranch (last, get_top t1))))
+       | Tree t2' -> (e, Tree (fix (TwoBranch (Odd, last, t1, t2')))))
+    (* Implement the odd case! *)
+    | TwoBranch (Odd, e, t1, t2) ->
+      let (last, q2') = get_last t1 in
+      (match q2' with
+       | Empty -> (e, Empty)
+       | Tree t1' -> (e, Tree (fix (TwoBranch (Even, last, t1', t2)))))
 
-    let run_tests () = failwith "BinaryHeap run_tests not implemented"
-  end
+  let test_is_empty () =
+    assert (is_empty empty = true);
+    assert (is_empty (add (C.generate ()) empty) = false)
+
+  let test_add_take () =
+    let x = C.generate () in
+    let x2 = C.generate_gt x in
+    let x3 = C.generate_gt x2 in
+    let x4 = C.generate_gt x3 in
+    let after_add = add x4 (add x3 (add x2 (add x empty))) in
+    assert ((take after_add) = (x, (add x4 (add x3 (add x2 empty)))))
+
+  let run_tests () =
+    test_is_empty ();
+    test_add_take ();
+    ()
+end
 
 (*......................................................................
 Now to actually use the priority queue implementations for something
 useful!
-
 Priority queues are very closely related to sorts. Remember that
 removal of elements from priority queues removes elements in highest
 priority to lowest priority order. So, if your priority for an element
 is directly related to the value of the element, then you should be
 able to come up with a simple way to use a priority queue for
 sorting...
-
 In OCaml 3.12 and above, modules can be turned into first-class
 values, and so can be passed to functions! Here, we're using that to
 avoid having to create a functor for sort. Creating the appropriate
 functor is a challenge problem :-)
-
 The following code is simply using the functors and passing in a
 COMPARABLE module for integers, resulting in priority queues tailored
 for ints.
@@ -358,12 +461,9 @@ module IntListQueue = (ListQueue(IntCompare) :
 module IntHeapQueue = (BinaryHeap(IntCompare) :
                          PRIOQUEUE with type elt = IntCompare.t)
 
-(* Uncomment this once your TreeQueue implementation is complete
-
 module IntTreeQueue = (TreeQueue(IntCompare) :
                         PRIOQUEUE with type elt = IntCompare.t)
 
-*)
 
 (* Store the whole modules in these variables *)
 let list_module = (module IntListQueue :
@@ -413,16 +513,13 @@ let selectionsort = sort list_module
 
 (*......................................................................
 Section 4: Challenge problem: Sort function
-
 A reminder: Challenge problems are for your karmic edification
 only. You should feel free to do these after you've done your best
 work on the primary part of the problem set.
-
 Above, we only allow for sorting on int lists. Write a functor that
 will take a COMPARABLE module as an argument, and allows for sorting
 on the type defined by that module. You should use your BinaryHeap
 module.
-
 As challenge problems go, this one is relatively easy, but you should
 still only attempt this once you are completely satisfied with the
 primary part of the problem set.
@@ -430,7 +527,6 @@ primary part of the problem set.
 
 (*......................................................................
 Section 5: Challenge problem: Benchmarking
-
 Now that you are learning about asymptotic complexity, try to write
 some functions to analyze the running time of the three different
 sorts. Record in a comment here the results of running each type of
@@ -444,11 +540,10 @@ and Sys modules for functions related to keeping track of time
 
 (*======================================================================
 Time estimate
-
 Please give us an honest (if approximate) estimate of how long (in
 minutes) this part of the problem set took you to complete (per person
 on average, not in total).  We care about your responses and will use
 them to help guide us in creating future assignments.
 ......................................................................*)
 
-let minutes_spent_on_part () : int = failwith "not provided" ;;
+let minutes_spent_on_part () : int = 600 ;;
