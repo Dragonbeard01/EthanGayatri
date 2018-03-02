@@ -387,7 +387,7 @@ struct
     | TwoBranch (Even, e, t1, t2) ->
       (match get_last t2 with
       | e1, que -> e1, Tree (TwoBranch (Odd, e, t1, extract_tree que)))
-    | TwoBranch (Odd, e, t1, t2) ->
+    | TwoBranch (Odd, e, t1, _t2) ->
       (match get_last t1 with
       | e1, que -> e1, Tree (TwoBranch (Even, e, extract_tree que, t1)))
 
