@@ -117,7 +117,7 @@ module BinSTree (C : COMPARABLE)
       | Branch (l, lst, r) ->
          match lst with
          | [] -> failwith "Invalid tree: empty list as node"
-         | hd::tl ->
+         | hd::_tl ->
             match C.compare x hd with
             | Less -> Branch (insert x l, lst, r)
             | Greater -> Branch (l, lst, insert x r)
@@ -211,7 +211,7 @@ module BinSTree (C : COMPARABLE)
     ..................................................................*)
     let getmin (t : tree) : elt =
       match (pull_min t) with
-      | (hd::tl), _ -> hd
+      | (hd::_tl), _ -> hd
       | _, _ -> raise NotFound
 
     (*..................................................................
@@ -227,9 +227,9 @@ module BinSTree (C : COMPARABLE)
       | Branch (l, v, r) -> let max, t' = pull_max r in
                             (max, Branch (l, v, t'))
 
-    let rec getmax (t : tree) : elt =
+    let getmax (t : tree) : elt =
       match (pull_max t) with
-      | (hd::tl), _ -> hd
+      | (hd::_tl), _ -> hd
       | _, _ -> raise NotFound
 
     (* to_string -- Generates a string representation of a binary

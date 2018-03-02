@@ -161,7 +161,7 @@ module TreeQueue (C : COMPARABLE) : (PRIOQUEUE with type elt = C.t) =
     let is_empty (q : queue) : bool =
       if q = empty then true else false
 
-    let rec add (e : elt) (q : queue) : queue =
+    let add (e : elt) (q : queue) : queue =
       T.insert e q
 
     let take (q : queue) : elt * queue =
@@ -338,22 +338,26 @@ struct
           (match t1 with
           | Leaf t1e -> TwoBranch(b, t1e, Leaf e, t2)
           | OneBranch (t1e, t1e2) -> TwoBranch(b, t1e, OneBranch (e, t1e2), t2)
-          | TwoBranch (t1b, t1e, t1t1, t1t2) -> TwoBranch(b, t1e, fix (TwoBranch (t1b, e, t1t1, t1t2)), t2))
+          | TwoBranch (t1b, t1e, t1t1, t1t2) ->
+            TwoBranch(b, t1e, fix (TwoBranch (t1b, e, t1t1, t1t2)), t2))
         | Less | Equal ->
           (match t2 with
           | Leaf t2e -> TwoBranch(b, t2e, t1, Leaf e)
           | OneBranch (t2e, t2e2) -> TwoBranch(b, t2e, t1, OneBranch (e, t2e2))
-          | TwoBranch (t2b, t2e, t2t1, t2t2) -> TwoBranch(b, t2e, t1, fix (TwoBranch (t2b, e, t2t1, t2t2)))))
+          | TwoBranch (t2b, t2e, t2t1, t2t2) ->
+            TwoBranch(b, t2e, t1, fix (TwoBranch (t2b, e, t2t1, t2t2)))))
       | Greater, Less ->
         (match t1 with
         | Leaf t1e -> TwoBranch(b, t1e, Leaf e, t2)
         | OneBranch (t1e, t1e2) -> TwoBranch(b, t1e, OneBranch (e, t1e2), t2)
-        | TwoBranch (t1b, t1e, t1t1, t1t2) -> TwoBranch(b, t1e, fix (TwoBranch (t1b, e, t1t1, t1t2)), t2))
+        | TwoBranch (t1b, t1e, t1t1, t1t2) ->
+          TwoBranch(b, t1e, fix (TwoBranch (t1b, e, t1t1, t1t2)), t2))
       | Less, Greater ->
         (match t2 with
         | Leaf t2e -> TwoBranch(b, t2e, t1, Leaf e)
         | OneBranch (t2e, t2e2) -> TwoBranch(b, t2e, t1, OneBranch (e, t2e2))
-        | TwoBranch (t2b, t2e, t2t1, t2t2) -> TwoBranch(b, t2e, t1, fix (TwoBranch (t2b, e, t2t1, t2t2))))
+        | TwoBranch (t2b, t2e, t2t1, t2t2) ->
+          TwoBranch(b, t2e, t1, fix (TwoBranch (t2b, e, t2t1, t2t2))))
       | _, _ -> TwoBranch (b, e, t1, t2))
 
 
@@ -470,10 +474,8 @@ let list_module = (module IntListQueue :
                      PRIOQUEUE with type elt = IntCompare.t)
 let heap_module = (module IntHeapQueue :
                      PRIOQUEUE with type elt = IntCompare.t)
-(*
 let tree_module = (module IntTreeQueue :
                      PRIOQUEUE with type elt = IntCompare.t)
-*)
 
 (* Implementing sort using generic priority queues. *)
 let sort (m : (module PRIOQUEUE with type elt=IntCompare.t)) (lst : int list) =
